@@ -73,10 +73,17 @@
 # tell to all that user connected
 (tell 'chat "+" *Name) 
 
+# Send message. In our socket too
+(de send-message(msg)
+  (out *Sock 
+	(prinl "*" *Name "> " msg)
+	(tell 'chat "*" *Name "> " msg))) 
+
+# Chat loop
 (task *Sock
    (in @
       (ifn (eof)
-         (tell 'chat "*" *Name "> " (line T)) 
+         (send-message (line T)) 
          (tell 'chat "-" *Name)
          (delete-user-record *Name)
 		 (bye) ) ) )
