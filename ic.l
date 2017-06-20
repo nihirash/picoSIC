@@ -21,7 +21,7 @@
 (rel ky (+Need +Key +Number))
 (rel nm (+Ref +String))
 
-# in db
+# DB method for user list 
 (de create-user-record(name)
    (new! '(+User) 
 	'ky (genKey 'ky '+User)
@@ -30,11 +30,14 @@
 (de to-list(This)
     (list (: nm)))
 
-(de is-free(name)
-    (= NIL (db 'nm '+User name)))
+(de is-free(nick)
+    (= NIL (db 'nm '+User nick)))
 
 (de get-online ()
     (mapcar to-list (collect 'ky '+User)))
+
+(de delete-user-record(nick)
+	(lose!> (db 'nm '+User nick)))
 
 # Broadcasting.
 (de chat Lst 
@@ -59,18 +62,22 @@
 # Authed loop
 (create-user-record *Name)
 
+# on connect list all online users
 (out *Sock
- (prinl "Online: ")
- (mapcar prinl (get-online))
+ (mapc '((usr) 
+		(prin "+")
+		(prinl usr)) 
+	(get-online))
  (prinl))
 
 # tell to all that user connected
-(tell 'chat "+ " *Name) 
+(tell 'chat "+" *Name) 
 
 (task *Sock
    (in @
       (ifn (eof)
-         (tell 'chat *Name ": " (line T)) 
-         (tell 'chat "- " *Name)
-         (bye) ) ) )
+         (tell 'chat "*" *Name "> " (line T)) 
+         (tell 'chat "-" *Name)
+         (delete-user-record *Name)
+		 (bye) ) ) )
 (wait)
