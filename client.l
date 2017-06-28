@@ -5,4 +5,56 @@
 # (c) Alexander Sharikhin
 # 21 june 17
 
-(bye)
+(load "@lib/misc.l")
+
+(de usage NIL
+   (prinl "client.l <host> <nick>")
+   (bye) )
+
+(setq *Host (opt))
+(setq *Port 4004)
+(setq *Nick (opt))
+
+(if (not (and *Host *Nick))
+	(usage) )
+
+(setq *Connection (connect *Host *Port))
+
+(unless *Connection
+	(quit (cons "Can't connect to " *Host)) )
+
+# Waiting for AUTH command. 
+
+(de is-get (What)
+	(= What (in *Connection (line T))) )
+
+(de auth-wait-loop NIL
+	(ifn (is-get "AUTH") (auth-wait-loop)) )  
+
+(auth-wait-loop)
+
+(out *Connection 
+	(prinl *Nick)
+	(flush) )
+
+(in *Connection (unless (is-get "OK") 
+			(quit "Auth failed") ) )
+
+(setq *Line NIL)
+
+(de termlog (Line)
+  (do (length *Line)
+   (prin "^H ^H") )
+  (prinl (tim$ (time)) " " Line )  
+  (prin *Line) ) 
+
+# Received messages 
+(task (in *Connection 
+	(loop 
+	   (setq *In (chop (line T)) 
+		  *Cmd (car *In)
+		  *Str (pack (cdr *In)) ) 
+	   (case *Cmd 
+		("*" (prinl *Str))
+ 		("+" (prinl *Str " is online"))
+		("-" (prinl *Str " is offline")) ) ) ) )

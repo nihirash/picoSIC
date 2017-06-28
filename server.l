@@ -40,7 +40,7 @@
    (mapcar to-list (collect 'ky '+User)) )
 
 (de delete-user-record (nick)
-   (lose!> (db 'nm '+User nick)) )
+   (if nick (lose!> (db 'nm '+User nick))) )
 
 # Broadcasting.
 (de chat Lst
@@ -54,15 +54,21 @@
 
 # Auth
 (loop
-   (out *Sock (prinl "AUTH ") (flush))
-   (in *Sock (setq *Name (line T)))
-   (T (is-free *Name)) )
+   (out *Sock (prinl "AUTH") (flush))
+   (in *Sock (setq *Auth (line T)))
+   (setq *AuthFields (mapcar pack (split (chop *Auth) " ")))
+   (T (is-free (car *AuthFields))) )
+
+(setq *Name (car *AuthFields))
+
+(unless *Name (bye)) 
 
 # Authed loop
 (create-user-record *Name)
 
 # on connect list all online users
 (out *Sock
+   (prinl "OK")
    (mapc
       '((usr) (prin "+") (prinl usr))
       (get-online) )
