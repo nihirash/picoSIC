@@ -25,7 +25,7 @@
    (pack (reverse *Line)) )
 
 (de backspace NIL 
-   (prin "^H ^H")
+   (prin "^H ^H") )
 
 (de clean-line NIL
    (do (length *Line)
