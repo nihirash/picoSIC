@@ -21,16 +21,25 @@
    (prinl "client.l <host> <nick>")
    (bye) )
 
+(de get-line NIL
+    (pack (reverse *Line)) )
+
+(de clean-line NIL
+    (do (length *Line) (prin "^H ^H")) )
+
 (de termlog (Line)
-   (do (length *Line)
-      (prin "^H ^H") )
+   (clean-line)
    (prinl (tim$ (time)) " " Line)
-   (prin *Line) ) 
+   (prin (get-line)) 
+   (flush) ) 
 
 (de is-get (What)
    (= What (in *Connection (line T))) )
 
-
+(de send-message (Line)
+	(out *Connection
+		(prinl Line) ) )
+ 
 (if (not (and *Host *Nick)) (usage))
 
 (setq *Connection (connect *Host *Port))
@@ -53,14 +62,26 @@
 (setq *Line NIL)
 
 # Received messages 
-(task
-   (in *Connection
-      (loop
+(task *Connection
+   (in @
          (setq
             *In (chop (line T))
             *Cmd (car *In)
             *Str (pack (cdr *In)) )
          (case *Cmd
-            ("*" (prinl *Str))
-            ("+" (prinl *Str " is online") (push '*Online *Str))
-            ("-" (prinl *Str " is offline") (del *Str '*Online)) ) ) ) )
+            ("*" (termlog *Str))
+            ("+" (termlog (cons *Str " is online")) (push '*Online *Str))
+            ("-" (termlog (cons *Str " is offline")) (del *Str '*Online)) ) ) ) 
+
+(loop
+	(case (key)
+		("^[" (bye))
+		(("^H" "^?") (when *Line 
+					(prin "^H ^H")	
+					(pop '*Line)) )
+		(("^J" "^M") (when *Line 
+						(send-message (get-line))
+						(clean-line)
+						(off *Line) ) )
+		(T (prin (push '*Line @))) ) )
+(bye)
