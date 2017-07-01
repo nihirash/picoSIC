@@ -24,7 +24,7 @@
 (de get-line NIL
    (pack (reverse *Line)) )
 
-(de backspace NIL 
+(de backspace NIL
    (prin "^H ^H") )
 
 (de clean-line NIL
@@ -41,9 +41,13 @@
    (= What (in *Connection (line T))) )
 
 (de send-message (Line)
-   (out *Connection (prinl Line)) )
+   (out *Connection (prinl Line))
+   (setq Splitted (chop Line))
+   (if (= "@" (car Splitted))
+      (termlog (cons "@" (cdr Splitted)))
+      (termlog (cons "Me> " Line)) ) )
 
-(if (not (and *Host *Nick)) (usage))
+(unless (and *Host *Nick) (usage))
 
 (setq *Connection (connect *Host *Port))
 
@@ -74,6 +78,7 @@
          *Str (pack (cdr *In)) )
       (case *Cmd
          ("*" (termlog *Str))
+         ("@" (termlog (pack "@" *Str)))
          ("+" (termlog (cons *Str " is online")) (push '*Online *Str))
          ("-" (termlog (cons *Str " is offline")) (del *Str '*Online)) ) ) ) 
 

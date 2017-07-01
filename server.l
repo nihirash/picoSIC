@@ -46,6 +46,11 @@
 (de chat Lst
    (out *Sock (mapc prin Lst) (prinl)) )
 
+# Private message
+(de private-msg (From To Msg)
+   (when (and (= To *Name) Msg)
+      (out *Sock (prin "@" From "> " Msg) (prinl)) ) )
+
 # Connection loop
 (loop
    (setq *Sock (listen *Port))
@@ -78,10 +83,29 @@
 (tell 'chat "+" *Name) 
 
 # Send message. In our socket too
-(de send-message (msg)
-   (out *Sock
-      (prinl "*" *Name "> " msg)
-      (tell 'chat "*" *Name "> " msg) ) ) 
+# Removing non-symbolic chars and not sent empty strings
+(de send-public-message (Msg)
+   (setq Msg
+      (pack
+         (filter
+            '((Chr) (>= (char Chr) 32))
+            (chop Msg) ) ) )
+   (when (pack (split (chop Msg) " "))
+      (tell 'chat "*" *Name "> " Msg) ) )
+
+# Send private message
+(de send-private-message (To Msg)
+   (when Msg (tell 'private-msg *Name To Msg)) )
+
+# Send message
+(de send-message (Msg)
+   (setq MsgChars (chop Msg))
+   (ifn (= (car MsgChars) "@")
+      (send-public-message Msg)
+      (send-private-message
+         (pack (car (split (cdr MsgChars) " ")))
+         (glue " " (cdr (split (cdr MsgChars) " "))) ) ) )
+
 
 # Chat loop
 (task
